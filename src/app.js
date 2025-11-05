@@ -13,6 +13,9 @@ const institutionRoutes = require('./routes/institutionRoutes');
 const expertRoutes = require('./routes/expertRoutes');
 const userRoutes = require('./routes/userRoutes');
 
+// Importar función para crear superadmin
+const { ensureSuperAdmin } = require('./scripts/createSuperAdmin');
+
 const app = express();
 
 // 🔥 CONFIGURACIÓN CORS MEJORADA
@@ -132,7 +135,7 @@ mongoose.connect(process.env.MONGODB_URI, {
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000,
 })
-.then(() => {
+.then(async () => {
     console.log('✅ Conectado a MongoDB Atlas');
     
     // Verificar conexión
@@ -148,6 +151,15 @@ mongoose.connect(process.env.MONGODB_URI, {
     db.on('reconnected', () => {
         console.log('🔁 MongoDB reconectado');
     });
+    
+    // 🔥 Crear superadmin si no existe
+    try {
+        console.log('👤 Verificando superadmin...');
+        await ensureSuperAdmin();
+    } catch (error) {
+        console.error('❌ Error al verificar/crear superadmin:', error.message);
+        // No interrumpir el inicio del servidor si falla la creación del superadmin
+    }
 })
 .catch((error) => {
     console.error('❌ Error conectando a MongoDB:', error);

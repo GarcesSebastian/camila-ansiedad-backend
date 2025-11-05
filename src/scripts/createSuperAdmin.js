@@ -24,24 +24,9 @@ if (!envLoaded) {
     console.log('⚠️ No se encontró archivo .env, usando URI directa');
 }
 
-const createSuperAdmin = async () => {
+// Función para verificar y crear superadmin (sin conexión, asume DB ya conectada)
+const ensureSuperAdmin = async () => {
     try {
-        console.log('🔌 Conectando a MongoDB...');
-        
-        // Usar MONGODB_URI del .env o URI directa como fallback
-        const mongoURI = process.env.MONGODB_URI || 'mongodb+srv://camilaansiedad2025_db_user:bL57cTesEbE9kfjr@camila-cluster.rf1w8xz.mongodb.net/camila-ansiedad?retryWrites=true&w=majority&appName=camila-cluster';
-        
-        console.log('📡 Usando:', mongoURI.substring(0, 60) + '...');
-        
-        await mongoose.connect(mongoURI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-            serverSelectionTimeoutMS: 15000,
-            socketTimeoutMS: 45000,
-        });
-        
-        console.log('✅ Conectado a MongoDB Atlas exitosamente');
-        
         // Verificar y crear superadmin
         const superAdmin = await User.findOne({ role: 'superadmin' });
         
@@ -60,12 +45,38 @@ const createSuperAdmin = async () => {
             console.log('📧 Email: superadmin@camila.com');
             console.log('🔑 Contraseña: admin123');
             console.log('👤 Rol: superadmin');
-            console.log('\n⚠️ IMPORTANTE: Cambia la contraseña después del primer login!');
+            console.log('⚠️ IMPORTANTE: Cambia la contraseña después del primer login!');
         } else {
             console.log('✅ Super administrador ya existe en el sistema');
             console.log(`📧 Email: ${superAdmin.email}`);
-            console.log(`👤 Nombre: ${superAdmin.name}`);
         }
+        
+    } catch (error) {
+        console.error('❌ Error verificando/creando superadmin:', error.message);
+        throw error;
+    }
+};
+
+// Función original para ejecutar como script standalone
+const createSuperAdmin = async () => {
+    try {
+        console.log('🔌 Conectando a MongoDB...');
+        
+        // Usar MONGODB_URI del .env o URI directa como fallback
+        const mongoURI = process.env.MONGODB_URI || 'mongodb+srv://camilaansiedad2025_db_user:bL57cTesEbE9kfjr@camila-cluster.rf1w8xz.mongodb.net/camila-ansiedad?retryWrites=true&w=majority&appName=camila-cluster';
+        
+        console.log('📡 Usando:', mongoURI.substring(0, 60) + '...');
+        
+        await mongoose.connect(mongoURI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+            serverSelectionTimeoutMS: 15000,
+            socketTimeoutMS: 45000,
+        });
+        
+        console.log('✅ Conectado a MongoDB Atlas exitosamente');
+        
+        await ensureSuperAdmin();
         
         await mongoose.disconnect();
         console.log('🔌 Conexión cerrada');
@@ -83,4 +94,10 @@ const createSuperAdmin = async () => {
     }
 };
 
-createSuperAdmin();
+// Exportar ambas funciones
+module.exports = { ensureSuperAdmin, createSuperAdmin };
+
+// Si se ejecuta directamente como script
+if (require.main === module) {
+    createSuperAdmin();
+}
